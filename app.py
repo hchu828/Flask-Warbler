@@ -1,31 +1,30 @@
+from http.client import UNAUTHORIZED
 import os
 
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
+from werkzeug.exceptions import Unauthorized
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import CSRFProtectForm, UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
 
 load_dotenv()
 
 CURR_USER_KEY = "curr_user"
-#API_SECRET_KEY = os.environ['SECRET_KEY']
-#DATABASE_URL = os.environ['DATABASE_URL']
 
 app = Flask(__name__)
 
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
-    os.getenv('DATABASE_URL'))#.replace("postgres://", "postgresql://"))
-# app.config['SQLALCHEMY_DATABASE_URI']  = 'postgresql:///warbler'
+    os.getenv('DATABASE_URL'))
+    #.replace("postgres://", "postgresql://")) - Ask about this at code review
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-# app.config['SECRET_KEY'] = 'abc123'
 
 debug = DebugToolbarExtension(app)
 
@@ -121,6 +120,18 @@ def login():
 def logout():
     """Handle logout of user."""
 
+    form = CSRFProtectForm()
+
+    if form.validate_on_submit():
+        do_logout()
+        flash("Logout Success!")
+        return redirect("/")
+
+    else:
+        flash("Invalid credentials.", 'danger')
+        raise Unauthorized()
+
+    
     # IMPLEMENT THIS AND FIX BUG
     # DO NOT CHANGE METHOD ON ROUTE
 
@@ -135,6 +146,8 @@ def list_users():
     Can take a 'q' param in querystring to search by that username.
     """
 
+    form = CSRFProtectForm()
+
     search = request.args.get('q')
 
     if not search:
@@ -142,40 +155,46 @@ def list_users():
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users)
+    return render_template('users/index.html', users=users, form=form)
 
 
 @app.get('/users/<int:user_id>')
 def users_show(user_id):
     """Show user profile."""
 
+    form = CSRFProtectForm()
+
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user)
+    return render_template('users/show.html', user=user, form=form)
 
 
 @app.get('/users/<int:user_id>/following')
 def show_following(user_id):
     """Show list of people this user is following."""
 
+    form = CSRFProtectForm()
+
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user)
+    return render_template('users/following.html', user=user, form=form)
 
 
 @app.get('/users/<int:user_id>/followers')
 def users_followers(user_id):
     """Show list of followers of this user."""
 
+    form = CSRFProtectForm()
+
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+    return render_template('users/followers.html', user=user, form=form)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -261,8 +280,10 @@ def messages_add():
 def messages_show(message_id):
     """Show a message."""
 
+    form = CSRFProtectForm()
+
     msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg)
+    return render_template('messages/show.html', message=msg, form=form)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -292,6 +313,8 @@ def homepage():
     - logged in: 100 most recent messages of followed_users
     """
 
+    form = CSRFProtectForm()
+
     if g.user:
         messages = (Message
                     .query
@@ -299,10 +322,10 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages)
+        return render_template('home.html', messages=messages, form=form)
 
     else:
-        return render_template('home-anon.html')
+        return render_template('home-anon.html', form=form)
 
 
 ##############################################################################
