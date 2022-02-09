@@ -54,6 +54,7 @@ def add_csrf_token_to_g():
 
     g.form = CSRFProtectForm()
 
+
 def do_login(user):
     """Log in user."""
 
@@ -135,10 +136,6 @@ def logout():
     else:
         flash("Invalid credentials.", 'danger')
         raise Unauthorized()
-
-    
-    # IMPLEMENT THIS AND FIX BUG
-    # DO NOT CHANGE METHOD ON ROUTE
 
 
 ##############################################################################
@@ -229,7 +226,7 @@ def profile():
     """Update profile for current user."""
 
     if not g.user:
-        flash("Access unauthorized NOT G.USER.", "danger")
+        flash("Access unauthorized.", "danger")
         return redirect("/")
 
     g.form = EditUserForm(obj=g.user)
@@ -238,7 +235,7 @@ def profile():
         if User.authenticate(g.user.username, g.form.password.data):
             g.user.username = g.form.username.data
             g.user.email = g.form.email.data
-            g.user.image_url = g.form.image_url.data
+            g.user.image_url = g.form.image_url.data #TODO: use default or hide image if broken
             g.user.header_image_url = g.form.header_image_url.data
             g.user.bio = g.form.bio.data
 
@@ -247,8 +244,8 @@ def profile():
             return redirect(f'/users/{g.user.id}')
 
         else:
-            flash("Access unauthorized FORM NOT VALIDATED.", "danger")
-            return redirect("/")
+            flash("Access unauthorized.", "danger") #TODO: When rendering template, show invalid password
+            # return redirect("/")
         
     return render_template('/users/edit.html')
 
@@ -335,8 +332,6 @@ def homepage():
 
     if g.user:
         following_ids = [user.id for user in g.user.following]
-
-        # following_ids.append(g.user.id)
 
         messages = (Message
                     .query
