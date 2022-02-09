@@ -59,7 +59,7 @@
         <li><a href="/messages/new">New Message</a></li>
         <li>
           <form id="logout-form" action="/logout" method="POST">
-            {{ form.hidden_tag() }}
+            {{ g.form.hidden_tag() }}
             <button type="submit" class="btn btn-link">Logout</button>
           </form>
         </li>
