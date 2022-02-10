@@ -200,12 +200,6 @@ class Likes(db.Model):
         primary_key=True,
     )
 
-    # #CODE REVIEW Not needed
-    # user_liked_messages = db.relationship(
-    #     "User",
-    #     secondary="messages",
-    #     backref='liked_messages'
-    # )
 
 def connect_db(app):
     """Connect this database to provided Flask app.

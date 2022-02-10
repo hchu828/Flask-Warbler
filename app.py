@@ -14,6 +14,7 @@ from models import db, connect_db, User, Message, Likes, DEFAULT_PROFILE_IMAGE, 
 load_dotenv()
 
 CURR_USER_KEY = "curr_user"
+BASE_URL = "http://localhost:5001"
 
 app = Flask(__name__)
 
@@ -371,7 +372,7 @@ def homepage():
 # Routes for Like and Unliking
 
 
-@app.post('/message/<int:message_id>/like')
+@app.post('/messages/<int:message_id>/like')
 def like_message(message_id):
     """Likes or unlikes the message a user clicks
     Creates database entry
@@ -383,10 +384,19 @@ def like_message(message_id):
         return redirect("/")
 
     if g.form.validate_on_submit():
-        liked_message = Likes.query.filter(Likes.message_id == message_id and Likes.user_id == g.user.id)
+        liked_message = Likes.query.filter(
+            Likes.message_id == message_id and Likes.user_id == g.user.id).one_or_none()
 
-        #if g.user.id.in_(messages):
-            #find record and delete
+        if not liked_message:
+            like = Likes(message_id=message_id, user_id=g.user.id)
+            db.session.add(like)
+           
+        else:
+            db.session.delete(liked_message)
+
+        db.session.commit()
+
+        return redirect("/")
 
 
 
