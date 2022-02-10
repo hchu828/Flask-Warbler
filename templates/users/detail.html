@@ -30,7 +30,9 @@
             </li>
             <li class="stat">
               <p class="small">Likes</p>
-              <h4>{{ liked_messages_count }}</h4>
+              <h4>
+                <a href="/users/{{ user.id }}/liked_messages">{{ liked_messages_count }}</a>
+              </h4>
             </li>
             <div class="ms-auto">
               {% if g.user.id == user.id %}

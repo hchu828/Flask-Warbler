@@ -14,7 +14,6 @@ from models import db, connect_db, User, Message, Likes, DEFAULT_PROFILE_IMAGE, 
 load_dotenv()
 
 CURR_USER_KEY = "curr_user"
-BASE_URL = "http://localhost:5001"
 
 app = Flask(__name__)
 
@@ -166,9 +165,11 @@ def users_show(user_id):
 
     liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
 
-    return render_template('users/show.html', 
-                            user=user, 
-                            liked_messages_count=liked_messages_count)
+    session['LAST_URL'] = f'/users/{user_id}'
+
+    return render_template('users/show.html',
+                           user=user,
+                           liked_messages_count=liked_messages_count)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -180,7 +181,10 @@ def show_following(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user)
+
+    liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
+
+    return render_template('users/following.html', user=user, liked_messages_count=liked_messages_count)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -192,7 +196,27 @@ def users_followers(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+
+    liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
+
+    return render_template('users/followers.html', user=user, liked_messages_count=liked_messages_count)
+
+
+@app.get('/users/<int:user_id>/liked_messages')
+def show_users_liked_messages(user_id):
+    """Shows a list of all messsages the user has liked"""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+
+    liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
+
+    session['LAST_URL'] = f'/users/{user_id}/liked_messages'
+
+    return render_template('users/likes.html', user=user, liked_messages_count=liked_messages_count)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -366,13 +390,15 @@ def homepage():
                     .limit(100)
                     .all())
 
+        session['LAST_URL'] = '/'
+
         return render_template('home.html', messages=messages)
 
     else:
         return render_template('home-anon.html')
 
 
-############################################################################## 
+##############################################################################
 # Routes for Like and Unliking
 
 
@@ -390,24 +416,22 @@ def like_message(message_id):
     if g.form.validate_on_submit():
         liked_message = Likes.query.filter(
             Likes.message_id == message_id and Likes.user_id == g.user.id).one_or_none()
-        
+
         # if liked_message.user_id == g.user.id:
-        if Message.query.filter_by(id=message_id).first() == g.user.id:
+        if Message.query.filter_by(id=message_id).first().user_id == g.user.id:
             flash("You cannot like your own messages..", "danger")
             return redirect("/")
 
         if not liked_message:
             like = Likes(message_id=message_id, user_id=g.user.id)
             db.session.add(like)
-           
+
         else:
             db.session.delete(liked_message)
 
         db.session.commit()
 
-        return redirect("/")
-
-
+        return redirect(session['LAST_URL'])
 
 
 ##############################################################################

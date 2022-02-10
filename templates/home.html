@@ -51,9 +51,9 @@
           <form type="submit" method="POST" action="/messages/{{ msg.id }}/like">
             {{ g.form.hidden_tag() }}
             {% if msg in g.user.liked_messages %}
-            <button type="submit" class="fas fa-star"></button>
+              <button type="submit" class="fas fa-star"></button>
             {% else %}
-            <button type="submit" class="far fa-star"></button>      
+              <button type="submit" class="far fa-star"></button>      
             {% endif %}
           </form>
 
