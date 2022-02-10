@@ -164,7 +164,11 @@ def users_show(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user)
+    liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
+
+    return render_template('users/show.html', 
+                            user=user, 
+                            liked_messages_count=liked_messages_count)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -386,6 +390,11 @@ def like_message(message_id):
     if g.form.validate_on_submit():
         liked_message = Likes.query.filter(
             Likes.message_id == message_id and Likes.user_id == g.user.id).one_or_none()
+        
+        # if liked_message.user_id == g.user.id:
+        if Message.query.filter_by(id=message_id).first() == g.user.id:
+            flash("You cannot like your own messages..", "danger")
+            return redirect("/")
 
         if not liked_message:
             like = Likes(message_id=message_id, user_id=g.user.id)
