@@ -213,6 +213,7 @@ def show_users_liked_messages(user_id):
     user = User.query.get_or_404(user_id)
 
     liked_messages_count = Likes.query.filter(Likes.user_id == user_id).count()
+    #CODE REVIEW len(user.likes)
 
     session['LAST_URL'] = f'/users/{user_id}/liked_messages'
 
@@ -401,7 +402,8 @@ def homepage():
 ##############################################################################
 # Routes for Like and Unliking
 
-
+#CODE REVIEW - name - togglelikes
+#Experiemnt with moving some of the mathy logic to the model(s)
 @app.post('/messages/<int:message_id>/like')
 def like_message(message_id):
     """Likes or unlikes the message a user clicks
@@ -414,10 +416,8 @@ def like_message(message_id):
         return redirect("/")
 
     if g.form.validate_on_submit():
-        liked_message = Likes.query.filter(
-            Likes.message_id == message_id and Likes.user_id == g.user.id).one_or_none()
+        liked_message = g.user.get_liked_message(message_id)
 
-        # if liked_message.user_id == g.user.id:
         if Message.query.filter_by(id=message_id).first().user_id == g.user.id:
             flash("You cannot like your own messages..", "danger")
             return redirect("/")
