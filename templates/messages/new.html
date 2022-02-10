@@ -4,7 +4,7 @@
   <div class="row justify-content-center">
     <div class="col-md-6">
       <form method="POST">
-        {{ g.form.csrf_token }}
+        {{ g.form.hidden_tag() }}
         <div>
           {% if g.form.text.errors %}
             {% for error in g.form.text.errors %}

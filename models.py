@@ -8,6 +8,9 @@ from flask_sqlalchemy import SQLAlchemy
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
+DEFAULT_PROFILE_IMAGE = "/static/images/default-pic.png"
+DEFAULT_HEADER_IMAGE = "/static/images/warbler-hero.jpg"
+
 
 class Follows(db.Model):
     """Connection of a follower <-> followed_user."""
@@ -87,6 +90,13 @@ class User(db.Model):
         primaryjoin=(Follows.user_following_id == id),
         secondaryjoin=(Follows.user_being_followed_id == id)
     )
+
+    liked_messages = db.relationship(
+        "Message",
+        secondary="likes",
+        backref='users_liked'
+    )
+
 
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
@@ -172,6 +182,30 @@ class Message(db.Model):
 
     user = db.relationship('User')
 
+
+class Likes(db.Model):
+    """Liked messsages."""
+
+    __tablename__ = 'likes'
+
+    message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete="cascade"),
+        primary_key=True,
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete="cascade"),
+        primary_key=True,
+    )
+
+    # #CODE REVIEW Not needed
+    # user_liked_messages = db.relationship(
+    #     "User",
+    #     secondary="messages",
+    #     backref='liked_messages'
+    # )
 
 def connect_db(app):
     """Connect this database to provided Flask app.

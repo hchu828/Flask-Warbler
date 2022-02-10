@@ -9,7 +9,7 @@ from werkzeug.exceptions import Unauthorized
 from sqlalchemy import or_
 
 from forms import CSRFProtectForm, EditUserForm, UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message, Follows
+from models import db, connect_db, User, Message, Likes, DEFAULT_PROFILE_IMAGE, DEFAULT_HEADER_IMAGE
 
 load_dotenv()
 
@@ -21,7 +21,6 @@ app = Flask(__name__)
 # if not set there, use development local db.
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     os.getenv('DATABASE_URL'))
-    #.replace("postgres://", "postgresql://")) - Ask about this at code review
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
@@ -196,14 +195,18 @@ def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
 
     if not g.user:
-        flash("Access unauthorized.", "danger")
+        flash("Access unauthorized. NO USER", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    if g.form.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.append(followed_user)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+        return redirect(f"/users/{g.user.id}/following")
+
+    flash("Access unauthorized. NOT VALIDATING FORM", "danger")
+    return redirect("/")
 
 
 @app.post('/users/stop-following/<int:follow_id>')
@@ -214,11 +217,15 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get(follow_id)
-    g.user.following.remove(followed_user)
-    db.session.commit()
+    if g.form.validate_on_submit():
+        followed_user = User.query.get(follow_id)
+        g.user.following.remove(followed_user)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+        return redirect(f"/users/{g.user.id}/following")
+
+    flash("Access unauthorized.", "danger")
+    return redirect("/")
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -235,22 +242,27 @@ def profile():
         if User.authenticate(g.user.username, g.form.password.data):
             g.user.username = g.form.username.data
             g.user.email = g.form.email.data
-            g.user.image_url = g.form.image_url.data #TODO: use default or hide image if broken
-            g.user.header_image_url = g.form.header_image_url.data
+            g.user.image_url = g.form.image_url.data or DEFAULT_PROFILE_IMAGE
+            g.user.header_image_url = g.form.header_image_url.data or DEFAULT_HEADER_IMAGE
             g.user.bio = g.form.bio.data
 
             db.session.commit()
-
             return redirect(f'/users/{g.user.id}')
-
         else:
-            flash("Access unauthorized.", "danger") #TODO: When rendering template, show invalid password
-            # return redirect("/")
-        
-    return render_template('/users/edit.html')
+            bad_form = EditUserForm(
+                username=g.form.username.data,
+                email=g.form.email.data,
+                image_url=g.form.image_url.data,
+                header_image_url=g.form.header_image_url,
+                bio=g.form.bio.data
+            )
 
+            g.form = bad_form
+            flash('Incorrect Password', 'danger')
+            return render_template('/users/edit.html')
 
-
+    else:
+        return render_template('/users/edit.html')
 
 
 @app.post('/users/delete')
@@ -261,12 +273,17 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    if g.form.validate_on_submit():
+        do_logout()
 
-    db.session.delete(g.user)
-    db.session.commit()
+        db.session.delete(g.user)
+        db.session.commit()
 
-    return redirect("/signup")
+        return redirect("/signup")
+
+    else:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
 
 
 ##############################################################################
@@ -311,12 +328,15 @@ def messages_destroy(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    if g.form.validate_on_submit():
+        msg = Message.query.get(message_id)
+        db.session.delete(msg)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}")
+        return redirect(f"/users/{g.user.id}")
 
+    flash("Access unauthorized.", "danger")
+    return redirect("/")
 
 ##############################################################################
 # Homepage and error pages
@@ -345,6 +365,30 @@ def homepage():
 
     else:
         return render_template('home-anon.html')
+
+
+##############################################################################
+# Routes for Like and Unliking
+
+
+@app.post('/message/<int:message_id>/like')
+def like_message(message_id):
+    """Likes or unlikes the message a user clicks
+    Creates database entry
+    Return render_template of the same page with star liked
+    """
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    if g.form.validate_on_submit():
+        liked_message = Likes.query.filter(Likes.message_id == message_id and Likes.user_id == g.user.id)
+
+        #if g.user.id.in_(messages):
+            #find record and delete
+
+
 
 
 ##############################################################################

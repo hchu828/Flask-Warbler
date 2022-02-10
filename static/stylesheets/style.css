@@ -302,6 +302,11 @@ nav + .container {
   color: #657786;
 }
 
+.warbler-post {
+  display: flex;
+  align-items: center;
+}
+
 /* ==================== User cards on follower/following pages */
 
 .user-card {
