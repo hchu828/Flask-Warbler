@@ -9,7 +9,7 @@ import os
 from unittest import TestCase
 from flask import session
 
-from models import db, User, Message, Follows
+from models import db, User, Message, Follows, Likes
 
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
@@ -40,6 +40,7 @@ class UserModelTestCase(TestCase):
         User.query.delete()
         Message.query.delete()
         Follows.query.delete()
+        Likes.query.delete()
 
         self.client = app.test_client()
 
@@ -69,6 +70,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(self.u.image_url, "/static/images/default-pic.png")
 
         self.assertEqual(str(self.u), f"<User #{self.u.id}: testuser, test@test.com>")
+        #Ask about in code review
 
     def test_is_followed_by(self):
         """Is u followed by u2?
@@ -77,6 +79,32 @@ class UserModelTestCase(TestCase):
         self.u.followers.append(self.u2)
 
         self.assertEqual(self.u.is_followed_by(self.u2), True)
+        self.assertNotEqual(self.u2.is_followed_by(self.u), True)
+
+    def test_is_following(self):
+        """Is u following u2?
+        Is u2 not following u.
+        """
+
+        self.u.following.append(self.u2)
+
+        self.assertEqual(self.u.is_following(self.u2), True)
+        self.assertNotEqual(self.u2.is_following(self.u), True)
+
+    def test_get_liked_messages(self):
+        """Can we get a list of liked messages
+        Creating message, liking message, checking
+        """
+
+        message = Message(text="This is a test message", user_id=self.u2.id)
+
+        db.session.add(message)
+
+        liked_message = Likes(message_id=message.id, user_id=self.u.id)
+        
+        db.session.add(liked_message)
+
+        self.assertEqual(self.u.get_liked_message(message.id), liked_message)
 
 
     # def test_is_following(self):
