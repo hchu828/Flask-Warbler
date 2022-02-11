@@ -7,6 +7,7 @@
 
 import os
 from unittest import TestCase
+from flask import session
 
 from models import db, User, Message, Follows
 
@@ -19,13 +20,15 @@ os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
 
 # Now we can import app
 
-from app import app
+from app import app, CURR_USER_KEY
 
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
 # and create fresh new clean test data
 
 db.create_all()
+
+app.config['WTF_CSRF_ENABLED'] = False
 
 
 class UserModelTestCase(TestCase):
@@ -55,6 +58,7 @@ class UserModelTestCase(TestCase):
         db.session.add_all([self.u, self.u2])
         db.session.commit()
 
+
     def test_user_model(self):
         """Does basic model work?"""
 
@@ -66,4 +70,27 @@ class UserModelTestCase(TestCase):
 
         self.assertEqual(str(self.u), f"<User #{self.u.id}: testuser, test@test.com>")
 
-    #def test_is_followed_by():
+    def test_is_followed_by(self):
+        """Is u followed by u2?
+        Is u2 not following u?"""
+
+        self.u.followers.append(self.u2)
+
+        self.assertEqual(self.u.is_followed_by(self.u2), True)
+
+
+    # def test_is_following(self):
+    #     """Is u2 following u?"""
+
+    #     self.u2.following.append(self.u)
+
+    #     self.assertEqual(self.u2.following, [self.u])
+
+            # with self.client as c:
+        #     with c.session_transaction() as sess:
+        #         sess[CURR_USER_KEY] = self.u.id
+        #     resp = c.post(f"/users/follow/{self.u.id}")
+
+        #     self.assertEqual(resp.status_code, 302)
+        #     self.assertEqual(len(self.u.followers), 1)
+
