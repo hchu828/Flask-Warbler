@@ -40,18 +40,30 @@ class UserModelTestCase(TestCase):
 
         self.client = app.test_client()
 
+        self.u = User(
+        email="test@test.com",
+        username="testuser",
+        password="HASHED_PASSWORD"
+        )
+
+        self.u2 = User(
+        email="test2@test.com",
+        username="testuser2",
+        password="HASHED_PASSWORD"
+        )
+
+        db.session.add_all([self.u, self.u2])
+        db.session.commit()
+
     def test_user_model(self):
         """Does basic model work?"""
 
-        u = User(
-            email="test@test.com",
-            username="testuser",
-            password="HASHED_PASSWORD"
-        )
-
-        db.session.add(u)
-        db.session.commit()
-
         # User should have no messages & no followers
-        self.assertEqual(len(u.messages), 0)
-        self.assertEqual(len(u.followers), 0)
+        self.assertEqual(len(self.u.messages), 0)
+        self.assertEqual(len(self.u.followers), 0)
+        
+        self.assertEqual(self.u.image_url, "/static/images/default-pic.png")
+
+        self.assertEqual(str(self.u), f"<User #{self.u.id}: testuser, test@test.com>")
+
+    #def test_is_followed_by():

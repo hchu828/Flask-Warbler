@@ -48,7 +48,7 @@
       <ul class="list-group" id="messages">
         {% for msg in messages %}
         <div class="warbler-post">
-          <form type="submit" method="POST" action="/messages/{{ msg.id }}/like">
+          <form type="submit" method="POST" action="/messages/{{ msg.id }}/togglelike">
             {{ g.form.hidden_tag() }}
             {% if msg in g.user.liked_messages %}
               <button type="submit" class="fas fa-star"></button>

@@ -7,7 +7,7 @@
         {% for msg in user.liked_messages %}
         <div class="warbler-post">
             {% if user.id == g.user.id %}
-            <form type="submit" method="POST" action="/messages/{{ msg.id }}/like">
+            <form type="submit" method="POST" action="/messages/{{ msg.id }}/togglelike">
                 {{ g.form.hidden_tag() }}
                 <button type="submit" class="fas fa-star"></button>
             </form>

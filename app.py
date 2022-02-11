@@ -404,7 +404,7 @@ def homepage():
 
 #CODE REVIEW - name - togglelikes
 #Experiemnt with moving some of the mathy logic to the model(s)
-@app.post('/messages/<int:message_id>/like')
+@app.post('/messages/<int:message_id>/togglelike')
 def like_message(message_id):
     """Likes or unlikes the message a user clicks
     Creates database entry
@@ -418,7 +418,7 @@ def like_message(message_id):
     if g.form.validate_on_submit():
         liked_message = g.user.get_liked_message(message_id)
 
-        if Message.query.filter_by(id=message_id).first().user_id == g.user.id:
+        if g.user.is_author(message_id):
             flash("You cannot like your own messages..", "danger")
             return redirect("/")
 

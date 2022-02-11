@@ -118,7 +118,12 @@ class User(db.Model):
 
         return Likes.query.filter(
             Likes.message_id == message_id and 
-            Likes.user_id == self.user.id).one_or_none()
+            Likes.user_id == self.id).one_or_none()
+
+    def is_author(self, message_id):
+        """Checks if user is the author of the post"""
+
+        return Message.query.filter_by(id=message_id).first().user_id == self.id
 
     @classmethod
     def signup(cls, username, email, password, image_url):

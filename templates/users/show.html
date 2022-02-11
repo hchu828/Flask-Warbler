@@ -5,7 +5,7 @@
 
     {% for message in user.messages %}
     <div class="warbler-post">
-      <form type="submit" method="POST" action="/messages/{{ message.id }}/like">
+      <form type="submit" method="POST" action="/messages/{{ message.id }}/togglelike">
         {{ g.form.hidden_tag() }}
         {% if message in g.user.liked_messages %}
         <button type="submit" class="fas fa-star"></button>
