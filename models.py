@@ -113,17 +113,22 @@ class User(db.Model):
         found_user_list = [user for user in self.following if user == other_user]
         return len(found_user_list) == 1
 
-    def get_liked_message(self, message_id):
+    def is_liked(self, message_id):
         """Checks if message is liked or not liked by user"""
 
-        return Likes.query.filter(
+        is_liked = Likes.query.filter(
             Likes.message_id == message_id and 
             Likes.user_id == self.id).one_or_none()
+
+        if is_liked is None:
+            return False
+        else:
+            return True
 
     def is_author(self, message_id):
         """Checks if user is the author of the post"""
 
-        return Message.query.filter_by(id=message_id).first().user_id == self.id
+        return Message.query.filter_by(id=message_id).one().user_id == self.id
 
     @classmethod
     def signup(cls, username, email, password, image_url):

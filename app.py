@@ -416,7 +416,9 @@ def like_message(message_id):
         return redirect("/")
 
     if g.form.validate_on_submit():
-        liked_message = g.user.get_liked_message(message_id)
+        liked_message = Likes.query.filter(
+                        Likes.message_id == message_id and 
+                        Likes.user_id == g.user.id).one_or_none()
 
         if g.user.is_author(message_id):
             flash("You cannot like your own messages..", "danger")

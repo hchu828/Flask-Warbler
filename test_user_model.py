@@ -9,7 +9,8 @@ import os
 from unittest import TestCase
 from flask import session
 
-from models import db, User, Message, Follows, Likes
+
+from models import db, User, Message, Follows, Likes, bcrypt
 
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
@@ -91,21 +92,72 @@ class UserModelTestCase(TestCase):
         self.assertEqual(self.u.is_following(self.u2), True)
         self.assertNotEqual(self.u2.is_following(self.u), True)
 
-    def test_get_liked_messages(self):
+    def test_is_liked(self):
         """Can we get a list of liked messages
         Creating message, liking message, checking
         """
 
         message = Message(text="This is a test message", user_id=self.u2.id)
-
         db.session.add(message)
+        db.session.commit()
+
+        self.assertEqual(self.u.is_liked(message.id), False)
 
         liked_message = Likes(message_id=message.id, user_id=self.u.id)
-        
         db.session.add(liked_message)
+        db.session.commit()
 
-        self.assertEqual(self.u.get_liked_message(message.id), liked_message)
+        self.assertEqual(self.u.is_liked(message.id), True)
 
+
+    def test_is_author(self):
+        """Is the user the author of the message"""
+
+        message = Message(text="This is a test message", user_id=self.u2.id)
+        db.session.add(message)
+        db.session.commit()
+
+        self.assertEqual(self.u.is_author(message.id), False)
+        self.assertEqual(self.u2.is_author(message.id), True)
+
+    def test_signup(self):
+        """Does our user instance have the same attributes as the instance 
+        returned from the signup class method?"""
+
+        hashed_pwd = bcrypt.generate_password_hash("hashed_pwd3").decode('UTF-8')
+
+        signup_user = User.signup(
+            username="test3",
+            email="email3@mail.com",
+            password=hashed_pwd,
+            image_url="",
+        )
+
+        db.session.commit()
+
+        signup_from_db = User.query.filter_by(id=signup_user.id).one()
+
+        self.assertEqual(signup_user, signup_from_db)
+
+    def test_authenticate(self):
+        """Returns true with correct username/password, otherwise False"""
+
+        signup_user = User.signup(
+            username="test3",
+            email="email3@mail.com",
+            password="hashed_pwd3",
+            image_url="",
+        )
+
+        db.session.commit()
+
+        self.assertEqual(User.authenticate(
+            username="test3",
+            password="hashed_pwd3"
+        ), User.query.filter_by(username="test3").first())
+
+
+        
 
     # def test_is_following(self):
     #     """Is u2 following u?"""
